@@ -6,9 +6,7 @@
  * Two-stage pipeline: detect salience → generate summary (quick alert or checklist).
  */
 
-import { getApiKey } from './config.js';
-
-const MODEL = 'gemini-1.5-flash';
+import { getApiKey, getModel } from './config.js';
 const MIN_GAP_MS = 15000; // Minimum 15s between summary calls
 
 const SALIENCE_PROMPT = `You are an attention assistant for a student who has difficulty staying focused in class. You will receive a chunk of what the teacher just said.
@@ -180,7 +178,8 @@ export class Summarizer {
    */
   async _callModel(prompt, jsonMode = false) {
     const apiKey = getApiKey();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+    const model = getModel();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const body = {
       contents: [{

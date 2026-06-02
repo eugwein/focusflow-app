@@ -33,3 +33,20 @@ export function setApiKey(key) {
     localStorage.removeItem('focusflow_api_key');
   }
 }
+
+export function getModel() {
+  const savedModel = localStorage.getItem('focusflow_model');
+  if (savedModel) {
+    return savedModel;
+  }
+  return 'gemini-3.1-flash-lite';
+}
+
+export function setModel(model) {
+  if (model && model.trim()) {
+    localStorage.setItem('focusflow_model', model.trim());
+  } else {
+    localStorage.removeItem('focusflow_model');
+  }
+}
+

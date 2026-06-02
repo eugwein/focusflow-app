@@ -10,7 +10,7 @@ import { LiveSession } from './live-session.js';
 import { TranscriptStore } from './transcript-store.js';
 import { Summarizer } from './summarizer.js';
 import { Chime } from './chime.js';
-import { getApiKey, setApiKey } from './config.js';
+import { getApiKey, setApiKey, getModel, setModel } from './config.js';
 import { AudioSimulator } from './audio-simulator.js';
 
 class FocusFlowApp {
@@ -97,6 +97,7 @@ class FocusFlowApp {
     const settingsBtn = document.getElementById('btn-settings');
     const settingsModal = document.getElementById('settings-modal');
     const apiKeyInput = document.getElementById('input-api-key');
+    const selectModel = document.getElementById('select-model');
     const settingsCancelBtn = document.getElementById('btn-settings-cancel');
     const settingsSaveBtn = document.getElementById('btn-settings-save');
 
@@ -113,6 +114,7 @@ class FocusFlowApp {
 
     settingsBtn.addEventListener('click', () => {
       apiKeyInput.value = localStorage.getItem('focusflow_api_key') || '';
+      selectModel.value = getModel();
       settingsModal.classList.add('visible');
     });
 
@@ -122,6 +124,7 @@ class FocusFlowApp {
 
     settingsSaveBtn.addEventListener('click', () => {
       setApiKey(apiKeyInput.value);
+      setModel(selectModel.value);
       settingsModal.classList.remove('visible');
     });
 
