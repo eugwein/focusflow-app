@@ -6,7 +6,8 @@
  * Two-stage pipeline: detect salience → generate summary (quick alert or checklist).
  */
 
-const API_KEY = 'AIzaSyAsPdFHFI_QGvO_gf1r4jQNxPipPCPisHw';
+import { getApiKey } from './config.js';
+
 const MODEL = 'gemini-2.5-flash';
 const MIN_GAP_MS = 15000; // Minimum 15s between summary calls
 
@@ -178,7 +179,8 @@ export class Summarizer {
    * @returns {Promise<string>}
    */
   async _callModel(prompt, jsonMode = false) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+    const apiKey = getApiKey();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
 
     const body = {
       contents: [{

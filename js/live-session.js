@@ -1,14 +1,6 @@
-/**
- * live-session.js
- *
- * Manages a WebSocket connection to the Gemini Live API for real-time
- * audio transcription. Sends PCM audio chunks and receives inputTranscription
- * events. Handles session setup, reconnection, and cleanup.
- */
+import { getApiKey } from './config.js';
 
-const API_KEY = 'AIzaSyAsPdFHFI_QGvO_gf1r4jQNxPipPCPisHw';
 const MODEL = 'gemini-3.1-flash-live-preview';
-const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
 
 // Reconnect before the 10-minute session limit
 const SESSION_MAX_MS = 9 * 60 * 1000; // 9 minutes
@@ -48,9 +40,12 @@ export class LiveSession {
     this._running = true;
     this._emitStatus('connecting');
 
+    const apiKey = getApiKey();
+    const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+
     return new Promise((resolve, reject) => {
       try {
-        this._ws = new WebSocket(WS_URL);
+        this._ws = new WebSocket(wsUrl);
       } catch (err) {
         this._running = false;
         this._emitStatus('error');
@@ -75,15 +70,29 @@ export class LiveSession {
       };
 
       this._ws.onerror = (event) => {
-        const err = new Error('WebSocket error');
+        const err = new Error('WebSocket error occurred.');
         if (this._onError) this._onError(err);
         this._emitStatus('error');
       };
 
       this._ws.onclose = (event) => {
         this._setupDone = false;
+        const closeMsg = `WebSocket closed (code: ${event.code}, reason: "${event.reason || 'No reason provided'}").`;
+        console.warn(closeMsg);
+        
+        if (event.code === 403 || event.code === 1008 || (event.reason && event.reason.includes('API key'))) {
+          const reasonStr = event.reason ? `: ${event.reason}` : '';
+          const err = new Error(`Connection failed (code ${event.code})${reasonStr}. Please check your API key in settings.`);
+          if (this._onError) this._onError(err);
+          this._emitStatus('error');
+          this.disconnect();
+          reject(err);
+          return;
+        }
+
         if (this._running) {
           // Unexpected close — attempt reconnect
+          if (this._onError) this._onError(new Error(closeMsg));
           this._emitStatus('reconnecting');
           setTimeout(() => this._reconnect(), 2000);
         } else {

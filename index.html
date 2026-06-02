@@ -14,6 +14,7 @@
     <header class="app-header">
       <h1 class="app-title">FocusFlow</h1>
       <div class="status-area">
+        <button id="btn-settings" class="btn-settings" title="Configure API Key">⚙️</button>
         <span class="status-dot" id="status-dot"></span>
         <span id="status">Ready</span>
       </div>
@@ -59,9 +60,26 @@
     <footer class="controls">
       <button class="btn btn-start" id="btn-start">● Start</button>
       <button class="btn btn-stop hidden" id="btn-stop">■ Stop</button>
+      <button class="btn btn-test" id="btn-test">▶ Test Audio</button>
       <button class="btn btn-clear" id="btn-clear">Clear</button>
     </footer>
 
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal">
+    <div class="modal-content">
+      <h3 class="modal-title">Settings</h3>
+      <div class="form-group">
+        <label for="input-api-key">Gemini API Key</label>
+        <input type="password" id="input-api-key" placeholder="Enter your Gemini API key...">
+        <small class="help-text">Leave empty to use the default key. If the default key is leaked/blocked, you must provide your own key.</small>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-settings-cancel" class="btn btn-secondary">Cancel</button>
+        <button id="btn-settings-save" class="btn btn-primary">Save</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="js/app.js"></script>

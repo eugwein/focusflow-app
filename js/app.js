@@ -10,6 +10,8 @@ import { LiveSession } from './live-session.js';
 import { TranscriptStore } from './transcript-store.js';
 import { Summarizer } from './summarizer.js';
 import { Chime } from './chime.js';
+import { getApiKey, setApiKey } from './config.js';
+import { AudioSimulator } from './audio-simulator.js';
 
 class FocusFlowApp {
   constructor() {
@@ -18,6 +20,7 @@ class FocusFlowApp {
     this.store = new TranscriptStore();
     this.summarizer = new Summarizer();
     this.chime = new Chime();
+    this.simulator = new AudioSimulator(this.session);
 
     this._isRunning = false;
     this._summaryIdCounter = 0;
@@ -87,17 +90,45 @@ class FocusFlowApp {
   _bindUI() {
     const startBtn = document.getElementById('btn-start');
     const stopBtn = document.getElementById('btn-stop');
+    const testBtn = document.getElementById('btn-test');
     const clearBtn = document.getElementById('btn-clear');
     const transcriptToggle = document.getElementById('transcript-toggle');
+    
+    const settingsBtn = document.getElementById('btn-settings');
+    const settingsModal = document.getElementById('settings-modal');
+    const apiKeyInput = document.getElementById('input-api-key');
+    const settingsCancelBtn = document.getElementById('btn-settings-cancel');
+    const settingsSaveBtn = document.getElementById('btn-settings-save');
 
     startBtn.addEventListener('click', () => this.start());
     stopBtn.addEventListener('click', () => this.stop());
+    testBtn.addEventListener('click', () => this.startTestAudio());
     clearBtn.addEventListener('click', () => this.clear());
 
     transcriptToggle.addEventListener('click', () => {
       const panel = document.getElementById('transcript-panel');
       const isOpen = panel.classList.toggle('open');
       transcriptToggle.textContent = isOpen ? '▼ Hide live transcript' : '▶ Show live transcript';
+    });
+
+    settingsBtn.addEventListener('click', () => {
+      apiKeyInput.value = localStorage.getItem('focusflow_api_key') || '';
+      settingsModal.classList.add('visible');
+    });
+
+    settingsCancelBtn.addEventListener('click', () => {
+      settingsModal.classList.remove('visible');
+    });
+
+    settingsSaveBtn.addEventListener('click', () => {
+      setApiKey(apiKeyInput.value);
+      settingsModal.classList.remove('visible');
+    });
+
+    settingsModal.addEventListener('click', (e) => {
+      if (e.target === settingsModal) {
+        settingsModal.classList.remove('visible');
+      }
     });
   }
 
@@ -113,12 +144,39 @@ class FocusFlowApp {
       this._updateUI();
     } catch (err) {
       this._showError(err.message);
+      this.stop();
+    }
+  }
+
+  async startTestAudio() {
+    if (this._isRunning) return;
+
+    try {
+      await this.session.connect();
+      this._isRunning = true;
+      this._updateUI();
+
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Preparing test audio...';
+
+      await this.simulator.start(
+        (progressMsg) => {
+          statusEl.textContent = progressMsg;
+        },
+        () => {
+          this.stop();
+        }
+      );
+    } catch (err) {
+      this._showError(err.message);
+      this.stop();
     }
   }
 
   stop() {
     if (!this._isRunning) return;
 
+    this.simulator.stop();
     this.audio.stop();
     this.session.disconnect();
     this._isRunning = false;
@@ -142,12 +200,15 @@ class FocusFlowApp {
   _updateUI() {
     const startBtn = document.getElementById('btn-start');
     const stopBtn = document.getElementById('btn-stop');
+    const testBtn = document.getElementById('btn-test');
 
     startBtn.disabled = this._isRunning;
     stopBtn.disabled = !this._isRunning;
+    testBtn.disabled = this._isRunning;
 
     startBtn.classList.toggle('hidden', this._isRunning);
     stopBtn.classList.toggle('hidden', !this._isRunning);
+    testBtn.classList.toggle('hidden', this._isRunning);
   }
 
   _updateStatus(status) {

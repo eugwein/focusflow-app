@@ -1,0 +1,7 @@
+# Ignore local audio file downloads
+test01_20s.wav
+
+# Local environment/settings
+.env
+.env.local
+.DS_Store

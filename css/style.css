@@ -417,3 +417,129 @@ body {
     font-size: 0.9rem;
   }
 }
+
+/* ======= Settings Button & Modal ======= */
+
+.btn-settings {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  color: #7a7a7a;
+  border-radius: 4px;
+}
+
+.btn-settings:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #2d2d2d;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: #faf9f7;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #2d2d2d;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #4a4a4a;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dcdad4;
+  border-radius: 6px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.95rem;
+  color: #2d2d2d;
+  background: #ffffff;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #6b9bd2;
+}
+
+.help-text {
+  display: block;
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-secondary {
+  background: #e8e6e1;
+  color: #666;
+}
+
+.btn-secondary:hover {
+  background: #dad8d2;
+}
+
+.btn-primary {
+  background: #6b9bd2;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #5587be;
+}
+
+.btn-test {
+  background: #6b9bd2;
+  color: white;
+}
+
+.btn-test:hover:not(:disabled) {
+  background: #5587be;
+}
+
+
