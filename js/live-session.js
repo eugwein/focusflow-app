@@ -175,13 +175,27 @@ export class LiveSession {
     };
 
     this._ws.send(JSON.stringify(config));
-    this._setupDone = true;
   }
 
-  _handleMessage(event) {
+  async _handleMessage(event) {
+    let rawData = event.data;
+    if (rawData instanceof Blob) {
+      try {
+        rawData = await rawData.text();
+      } catch (e) {
+        return;
+      }
+    } else if (rawData instanceof ArrayBuffer) {
+      try {
+        rawData = new TextDecoder().decode(rawData);
+      } catch (e) {
+        return;
+      }
+    }
+
     let data;
     try {
-      data = JSON.parse(event.data);
+      data = JSON.parse(rawData);
     } catch (e) {
       return;
     }
