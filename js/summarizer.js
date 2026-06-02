@@ -8,7 +8,7 @@
 
 import { getApiKey } from './config.js';
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-1.5-flash';
 const MIN_GAP_MS = 15000; // Minimum 15s between summary calls
 
 const SALIENCE_PROMPT = `You are an attention assistant for a student who has difficulty staying focused in class. You will receive a chunk of what the teacher just said.
