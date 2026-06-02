@@ -329,7 +329,8 @@ class FocusFlowApp {
       const label = document.createElement('label');
       label.htmlFor = checkbox.id;
       label.className = 'checklist-label';
-      label.textContent = `${index + 1}. ${step}`;
+      const cleanStep = step.replace(/^\d+[\.\)\s-]+\s*/, '');
+      label.textContent = `${index + 1}. ${cleanStep}`;
 
       checkbox.addEventListener('change', () => {
         li.classList.toggle('checked', checkbox.checked);
