@@ -165,8 +165,8 @@ export class LiveSession {
         },
         realtimeInputConfig: {
           automaticActivityDetection: {
-            startOfSpeechSensitivity: 'START_SENSITIVITY_MEDIUM',
-            endOfSpeechSensitivity: 'END_SENSITIVITY_MEDIUM',
+            startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
+            endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH',
             prefixPaddingMs: 200,
             silenceDurationMs: 1000,
           }
