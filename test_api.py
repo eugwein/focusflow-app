@@ -7,7 +7,7 @@ import urllib.request
 import websockets
 
 MODEL = "gemini-3.1-flash-live-preview"
-API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAsPdFHFI_QGvO_gf1r4jQNxPipPCPisHw")
+API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 AUDIO_URL = "https://raw.githubusercontent.com/voxserv/audio_quality_testing_samples/master/testaudio/16000/test01_20s.wav"
 AUDIO_FILE = "test01_20s.wav"

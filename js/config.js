@@ -23,7 +23,7 @@ export function getApiKey() {
     return savedKey;
   }
 
-  return 'AIzaSyAsPdFHFI_QGvO_gf1r4jQNxPipPCPisHw';
+  return 'YOUR_API_KEY_HERE';
 }
 
 export function setApiKey(key) {
