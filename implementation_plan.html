@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusFlow — Implementation Plan</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #faf9f7;
+      --text-color: #2d2d2d;
+      --title-color: #1a1a1a;
+      --primary-color: #6b9bd2;
+      --border-color: #e8e6e1;
+      --code-bg: #f5f4ef;
+      --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Lexend', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      color: var(--text-color);
+      background-color: var(--bg-color);
+      max-width: 880px;
+      margin: 60px auto;
+      padding: 0 24px;
+      font-weight: 300;
+    }
+
+    h1, h2, h3, h4 {
+      color: var(--title-color);
+      margin-top: 2em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      border-bottom: 3px solid var(--border-color);
+      padding-bottom: 16px;
+      margin-top: 0;
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: 1.7rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+      margin-top: 2.2em;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      margin-top: 1.5em;
+    }
+
+    p, li {
+      font-size: 1.05rem;
+      margin-bottom: 1em;
+    }
+
+    ul, ol {
+      margin-left: 24px;
+      margin-bottom: 1.5em;
+    }
+
+    li {
+      margin-bottom: 0.5em;
+    }
+
+    hr {
+      border: 0;
+      height: 1px;
+      background: var(--border-color);
+      margin: 3em 0;
+    }
+
+    /* Table styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--border-color);
+    }
+
+    th, td {
+      padding: 14px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 1rem;
+    }
+
+    th {
+      background-color: #f0efe8;
+      font-weight: 500;
+      color: var(--title-color);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Code styling */
+    pre {
+      background-color: var(--code-bg);
+      padding: 20px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.92rem;
+      border: 1px solid var(--border-color);
+      margin: 20px 0;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    code {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: var(--code-bg);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 0.88em;
+      color: #bf3f5a;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      border-radius: 0;
+      color: var(--text-color);
+    }
+
+    /* Mermaid rendering box */
+    .mermaid-container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      margin: 24px 0;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      justify-content: center;
+    }
+
+    a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 400;
+      transition: color 0.15s;
+    }
+
+    a:hover {
+      color: #5587be;
+      text-decoration: underline;
+    }
+
+    /* Helper cards */
+    .info-card {
+      background-color: #f0f4fa;
+      border-left: 4px solid var(--primary-color);
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .info-card p:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>FocusFlow — Implementation Plan</h1>
+  <p>An app that listens to classroom speech in real time, transcribes it, detects when something important is said (instructions, assignments, key concepts), and surfaces a simple, child-friendly summary only when it matters — minimizing distraction for users with attention difficulties.</p>
+
+  <h2>Background &amp; Constraints</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Constraint</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Platform</strong></td>
+        <td>Chromebook — runs locally in Chrome browser</td>
+      </tr>
+      <tr>
+        <td><strong>Transcription</strong></td>
+        <td>Gemini Live API (WebSocket, <code>gemini-3.1-flash-live-preview</code>) with <code>inputAudioTranscription</code></td>
+      </tr>
+      <tr>
+        <td><strong>Summarization</strong></td>
+        <td><code>@google/genai</code> SDK (REST API fallback in browser) &rarr; <code>models.generateContent()</code> with dynamic model select</td>
+      </tr>
+      <tr>
+        <td><strong>API Key</strong></td>
+        <td>Local/Playground: <code>YOUR_API_KEY_HERE</code> (Git version: placeholder <code>YOUR_API_KEY_HERE</code> / empty string to satisfy GitHub Push Protection)</td>
+      </tr>
+      <tr>
+        <td><strong>Persistence</strong></td>
+        <td>None — summaries are ephemeral, not saved/exported</td>
+      </tr>
+      <tr>
+        <td><strong>Notification</strong></td>
+        <td>Gentle chime when a new summary appears</td>
+      </tr>
+      <tr>
+        <td><strong>Diarization</strong></td>
+        <td>Deferred to v2 — will explore Gemini Live multi-speaker APIs later</td>
+      </tr>
+      <tr>
+        <td><strong>UI</strong></td>
+        <td>Minimal, distraction-free, with persistent pinned cards for multi-step instructions</td>
+      </tr>
+      <tr>
+        <td><strong>Target reader</strong></td>
+        <td>Summaries written for a 5–6 year old reading level</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Two-Model Pipeline Architecture</h2>
+  <div class="mermaid-container">
+    <pre class="mermaid">
+graph LR
+    subgraph "🎤 Transcription"
+        MIC["Microphone"] -->|"PCM 16kHz"| LIVE["Gemini Live API<br/>WebSocket<br/>gemini-3.1-flash-live-preview"]
+        LIVE -->|"inputTranscription"| BUFFER["Transcript Buffer"]
+    end
+
+    subgraph "🧠 Summarization"
+        BUFFER -->|"Every ~30s<br/>or on silence"| GENAI["@google/genai SDK (REST)<br/>models.generateContent<br/>(Dynamic Model selected in Settings)"]
+        GENAI -->|"Salient summary<br/>or nothing"| UI["Summary Cards"]
+    end
+
+    UI -->|"🔔 chime"| SPEAKER["Speaker"]
+    </pre>
+  </div>
+
+  <h2>System Instructions &amp; Prompts</h2>
+
+  <h3>1. Live Transcription (WebSocket) System Instruction</h3>
+  <p>The Gemini Live API requires a system instruction instructing the model to remain silent and function solely as a speech transcription engine.</p>
+  <pre>You are a silent listener. Do not speak, do not respond, do not generate any audio output. Simply listen to the audio input.</pre>
+
+  <h3>2. Salience Detection Prompt (REST API)</h3>
+  <p>Determines whether a chunk of text contains important information that should trigger an alert/checklist.</p>
+  <pre>You are an attention assistant for a student who has difficulty staying focused in class. You will receive a chunk of what the teacher just said.
+
+Determine if this contains SALIENT content the student needs to act on or remember. Also determine if the content contains MULTIPLE STEPS or a list of instructions.
+
+SALIENT content includes:
+- Instructions or assignments ("turn to page 5", "write your name", "first do X, then do Y, then do Z")
+- Warnings or rules ("don't forget to...", "this will be on the test")
+- Key new concepts being taught
+- Schedule changes or deadlines
+- Questions directed at the class
+
+NOT salient: general explanation flowing continuously, casual chat, greetings, filler speech ("um", "so", "okay"), repetition of previously stated info.
+
+Respond with JSON only:
+{"is_salient": true, "category": "instruction", "has_multiple_steps": false, "step_count": 0, "confidence": 0.85}</pre>
+
+  <h3>3. Quick Alert Prompt (REST API)</h3>
+  <p>Used when a single salient event or warning is detected.</p>
+  <pre>You are a friendly helper for a young student (age 5-6) who has trouble paying attention. The teacher just said something important.
+
+Write a SHORT, CLEAR summary:
+- Use simple words a 5-6 year old can read
+- 1-3 sentences maximum
+- Start with a matching emoji:
+  📝 for instructions    ⚠️ for warnings/rules
+  💡 for key concepts    📅 for deadlines
+  ❓ for questions
+- Tell the student what to DO or REMEMBER
+- Use direct language: "You need to..." not "The teacher said..."
+
+Context of session so far: {session_summary}
+Teacher just said: {recent_transcript}</pre>
+
+  <h3>4. Checklist Prompt (REST API)</h3>
+  <p>Used when multi-step instructions are detected, rendering as an interactive checklist.</p>
+  <pre>You are a friendly helper for a young student (age 5-6) who has trouble paying attention. The teacher just gave a set of instructions with multiple steps.
+
+Create a NUMBERED CHECKLIST:
+- List every step the teacher mentioned, in order
+- Use simple words a 5-6 year old can read
+- Keep each step to one short sentence
+- Do NOT skip or combine steps — include ALL of them
+- Uses direct language: "Open your book" not "The teacher said to open"
+
+Respond with JSON only:
+{"title": "short title", "steps": ["step 1", "step 2", "step 3"]}
+
+Context of session so far: {session_summary}
+Teacher just said: {recent_transcript}</pre>
+
+  <hr>
+
+  <h2>Completed Implementations &amp; Chronological Fixes</h2>
+
+  <h3>Step 1: Initial Setup</h3>
+  <ul>
+    <li>Initialized a distraction-free user interface matching the accessibility specs.</li>
+    <li>Created <code>audio-capture.js</code> using Web Audio API to capture raw microphone data at 48kHz, downsample it to 16kHz using an <code>AudioWorkletNode</code> (<code>pcm-processor.js</code>), and encode it to base64 PCM chunks.</li>
+    <li>Created <code>chime.js</code> to play short, warm tones on new summary alerts.</li>
+    <li>Configured local python test script (<code>test_api.py</code>) to verify the Gemini Live connection and transcript receiving logic.</li>
+  </ul>
+
+  <h3>Step 2: VAD Configuration Error Fix (1007)</h3>
+  <ul>
+    <li><strong>Issue:</strong> WebSocket closed with code <code>1007</code> because of invalid automatic activity detection sensitivity values (<code>START_SENSITIVITY_MEDIUM</code> and <code>END_SENSITIVITY_MEDIUM</code>).</li>
+    <li><strong>Fix:</strong> Updated VAD parameters in <code>live-session.js</code> to use supported API schema enums: <code>START_SENSITIVITY_HIGH</code> and <code>END_SENSITIVITY_HIGH</code>.</li>
+  </ul>
+
+  <h3>Step 3: API Key Security &amp; Dual-Environment Sync</h3>
+  <ul>
+    <li><strong>Issue:</strong> GitHub Push Protection blocked pushing to remote due to hardcoded API keys.</li>
+    <li><strong>Fix:</strong> Replaced raw keys with placeholders (<code>YOUR_API_KEY_HERE</code>) in the version-controlled <code>focusflow/</code> directory, while preserving the user's active key in the local <code>playground/focusflow/</code> directory for development.</li>
+  </ul>
+
+  <h3>Step 4: Binary Message Parse Error Fix</h3>
+  <ul>
+    <li><strong>Issue:</strong> Browser console threw <code>SyntaxError: Unexpected token 'o', "[object Blob]" is not valid JSON</code>. The Gemini Live API sends binary audio packets back to the client. Since <code>JSON.parse</code> expects a string, calling it on a binary <code>Blob</code> crashed the event loop, stopping transcripts from showing in the UI.</li>
+    <li><strong>Fix:</strong> Rewrote <code>_handleMessage(event)</code> in <code>live-session.js</code> to detect <code>Blob</code> and <code>ArrayBuffer</code> objects, decode them to text, and catch JSON parse errors silently to ignore binary audio frames without crashing the transcription flow.</li>
+    <li><strong>Improved Handshake Timing:</strong> Updated <code>live-session.js</code> to flag <code>_setupDone = true</code> only <em>after</em> the server acknowledges with <code>setupComplete</code>, ensuring no audio packets are sent before connection setup is finished.</li>
+  </ul>
+
+  <h3>Step 5: Summarizer Retry Logic</h3>
+  <ul>
+    <li><strong>Issue:</strong> Summarizer failed during spikes in demand with <code>API error 503 (Service Unavailable / Overloaded)</code>.</li>
+    <li><strong>Fix:</strong> Added robust retry logic with exponential backoff (starting at <code>1s</code>, doubling delay up to 3 retries) for transient HTTP errors (<code>503</code>, <code>429</code>, <code>500</code>, <code>504</code>) and network disconnects inside <code>summarizer.js</code>'s <code>_callModel()</code> helper.</li>
+  </ul>
+
+  <h3>Step 6: Favicon 404 Error Fix</h3>
+  <ul>
+    <li><strong>Issue:</strong> Chrome console reported a 404 error fetching <code>http://localhost:8080/favicon.ico</code>.</li>
+    <li><strong>Fix:</strong> Added an inline SVG data URL favicon tag (🎯) inside the <code>&lt;head&gt;</code> of <code>index.html</code>, immediately satisfying browser requests without checking in separate binary files.</li>
+  </ul>
+
+  <h3>Step 7: Settings Model Dropdown UI Upgrade</h3>
+  <ul>
+    <li><strong>Issue:</strong> User requested model switching flexibility to avoid quota limits on older/newer models.</li>
+    <li><strong>Fix:</strong> Added model selection dropdown to settings modal. Handled loading/saving model dynamically in <code>localStorage</code> (<code>config.js</code>, <code>app.js</code>), styled the dropdown (<code>style.css</code>), and updated <code>summarizer.js</code> to request dynamic models. Pushed changes to GitHub.</li>
+  </ul>
+
+  <h3>Step 8: Duplicate Checklist Numbering Fix</h3>
+  <ul>
+    <li><strong>Issue:</strong> Item numbers rendered twice (e.g. <code>1. 1. Take out your worksheet.</code>) when the Gemini API returned numbered JSON strings.</li>
+    <li><strong>Fix:</strong> Added dynamic regex cleanup (<code>/^\d+[\.\)\s-]+\s*/</code>) in <code>app.js</code> checklist rendering to strip leading numbering prefixes before prepending the UI list numbers. Pushed changes to GitHub.</li>
+  </ul>
+
+  <hr>
+
+  <h2>Vercel Deployment &amp; Secure Edge Authorization Plan</h2>
+  <p>To share the application with specific users while protecting it from the general public, we will configure Vercel Edge Middleware to perform HTTP Basic Authentication. This runs at Vercel's global edge network <em>before</em> any static HTML, CSS, or JS files are served to the user, making it highly secure and lightweight.</p>
+
+  <h3>Edge Authorization File (middleware.js)</h3>
+  <p>We introduced <code>middleware.js</code> at the root of the repository to intercept requests:</p>
+  <pre>export const config = {
+  // Protect all routes except static assets we might want to bypass (e.g., favicon)
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};
+
+export function middleware(request) {
+  const authorization = request.headers.get('authorization');
+  
+  if (authorization) {
+    const base64 = authorization.split(' ')[1];
+    const credentials = atob(base64);
+    const [user, password] = credentials.split(':');
+    
+    // Read secure environment variables set in Vercel project settings
+    const expectedUser = process.env.BASIC_AUTH_USER || 'admin';
+    const expectedPassword = process.env.BASIC_AUTH_PASSWORD;
+    
+    if (expectedPassword && user === expectedUser && password === expectedPassword) {
+      return; // Authorized: Allow the request to proceed to the static assets
+    }
+  }
+  
+  // Return HTTP 401 Unauthorized challenge to trigger browser login prompt
+  return new Response('Authentication Required', {
+    status: 401,
+    headers: {
+      'www-authenticate': 'Basic realm="FocusFlow Secure Area"',
+    },
+  });
+}</pre>
+
+  <hr>
+
+  <h2>Vercel Deployment Steps</h2>
+  
+  <div class="info-card">
+    <p><strong>Step 1: Push changes to GitHub</strong><br>
+    The <code>middleware.js</code> file has been pushed to the GitHub repository and is ready for Vercel's automatic import.</p>
+  </div>
+
+  <div class="info-card">
+    <p><strong>Step 2: Import Project on Vercel</strong><br>
+    Go to the Vercel dashboard, click <em>Add New -> Project</em>, and import the <code>focusflow-app</code> repository.</p>
+  </div>
+
+  <div class="info-card">
+    <p><strong>Step 3: Configure Environment Variables</strong><br>
+    In the Vercel project settings, configure the following Environment Variables:<br>
+    1. <code>BASIC_AUTH_USER</code> (e.g., <code>focususer</code>)<br>
+    2. <code>BASIC_AUTH_PASSWORD</code> (a secure password of choice)</p>
+  </div>
+
+  <div class="info-card">
+    <p><strong>Step 4: Deploy and Verify</strong><br>
+    Click <em>Deploy</em>. Access the deployment URL, verify the credential prompt triggers, and log in successfully to load the FocusFlow application.</p>
+  </div>
+
+  <!-- Load Mermaid diagram rendering dynamically -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+</body>
+</html>
