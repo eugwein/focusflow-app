@@ -1,0 +1,322 @@
+/**
+ * app.js
+ *
+ * Main controller for FocusFlow. Wires together audio capture, Live API session,
+ * transcript store, summarizer, chime, and the UI.
+ */
+
+import { AudioCapture } from './audio-capture.js';
+import { LiveSession } from './live-session.js';
+import { TranscriptStore } from './transcript-store.js';
+import { Summarizer } from './summarizer.js';
+import { Chime } from './chime.js';
+
+class FocusFlowApp {
+  constructor() {
+    this.audio = new AudioCapture();
+    this.session = new LiveSession();
+    this.store = new TranscriptStore();
+    this.summarizer = new Summarizer();
+    this.chime = new Chime();
+
+    this._isRunning = false;
+    this._summaryIdCounter = 0;
+
+    this._bindModules();
+    this._bindUI();
+    this._updateUI();
+  }
+
+  // --- Module wiring ---
+
+  _bindModules() {
+    // Audio → Live API
+    this.audio.onChunk((base64) => {
+      this.session.sendAudio(base64);
+    });
+
+    // Live API → Transcript Store
+    this.session.onTranscript((text) => {
+      this.store.addFragment(text);
+    });
+
+    this.session.onTurnComplete(() => {
+      this.store.signalTurnComplete();
+    });
+
+    this.session.onError((err) => {
+      this._showError(err.message);
+    });
+
+    this.session.onStatusChange((status) => {
+      this._updateStatus(status);
+    });
+
+    // Transcript Store → Summarizer triggers
+    this.store.onTrigger(async (data) => {
+      this.store.markSummarized();
+      await this.summarizer.process(data);
+    });
+
+    // Transcript Store → debug transcript display
+    this.store.onEntry((entry) => {
+      this._appendTranscript(entry);
+    });
+
+    // Summarizer → UI
+    this.summarizer.onQuickAlert((alert) => {
+      this._addQuickAlert(alert);
+      this.chime.play();
+    });
+
+    this.summarizer.onChecklist((checklist) => {
+      this._addChecklist(checklist);
+      this.chime.play();
+    });
+
+    this.summarizer.onProcessing((isProcessing) => {
+      const indicator = document.getElementById('processing-indicator');
+      if (indicator) {
+        indicator.classList.toggle('visible', isProcessing);
+      }
+    });
+  }
+
+  // --- UI binding ---
+
+  _bindUI() {
+    const startBtn = document.getElementById('btn-start');
+    const stopBtn = document.getElementById('btn-stop');
+    const clearBtn = document.getElementById('btn-clear');
+    const transcriptToggle = document.getElementById('transcript-toggle');
+
+    startBtn.addEventListener('click', () => this.start());
+    stopBtn.addEventListener('click', () => this.stop());
+    clearBtn.addEventListener('click', () => this.clear());
+
+    transcriptToggle.addEventListener('click', () => {
+      const panel = document.getElementById('transcript-panel');
+      const isOpen = panel.classList.toggle('open');
+      transcriptToggle.textContent = isOpen ? '▼ Hide live transcript' : '▶ Show live transcript';
+    });
+  }
+
+  // --- App lifecycle ---
+
+  async start() {
+    if (this._isRunning) return;
+
+    try {
+      await this.session.connect();
+      await this.audio.start();
+      this._isRunning = true;
+      this._updateUI();
+    } catch (err) {
+      this._showError(err.message);
+    }
+  }
+
+  stop() {
+    if (!this._isRunning) return;
+
+    this.audio.stop();
+    this.session.disconnect();
+    this._isRunning = false;
+    this._updateUI();
+  }
+
+  clear() {
+    this.store.clear();
+
+    // Clear UI
+    document.getElementById('pinned-cards').innerHTML = '';
+    document.getElementById('recent-cards').innerHTML = '';
+    document.getElementById('transcript-content').textContent = '';
+    document.getElementById('pinned-section').classList.add('hidden');
+
+    this._updateEmptyState();
+  }
+
+  // --- UI rendering ---
+
+  _updateUI() {
+    const startBtn = document.getElementById('btn-start');
+    const stopBtn = document.getElementById('btn-stop');
+
+    startBtn.disabled = this._isRunning;
+    stopBtn.disabled = !this._isRunning;
+
+    startBtn.classList.toggle('hidden', this._isRunning);
+    stopBtn.classList.toggle('hidden', !this._isRunning);
+  }
+
+  _updateStatus(status) {
+    const el = document.getElementById('status');
+    const dot = document.getElementById('status-dot');
+
+    const labels = {
+      connecting: 'Connecting...',
+      connected: 'Connected',
+      listening: 'Listening',
+      reconnecting: 'Reconnecting...',
+      error: 'Error',
+      disconnected: 'Ready',
+    };
+
+    el.textContent = labels[status] || status;
+
+    dot.className = 'status-dot';
+    if (status === 'listening') {
+      dot.classList.add('active');
+    } else if (status === 'connecting' || status === 'reconnecting') {
+      dot.classList.add('connecting');
+    } else if (status === 'error') {
+      dot.classList.add('error');
+    }
+  }
+
+  _appendTranscript(entry) {
+    const el = document.getElementById('transcript-content');
+    const time = new Date(entry.timestamp).toLocaleTimeString();
+    el.textContent += `[${time}] ${entry.text}\n`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  _addQuickAlert({ text, category }) {
+    const container = document.getElementById('recent-cards');
+
+    const card = document.createElement('div');
+    card.className = `summary-card alert-card category-${category || 'instruction'}`;
+    card.id = `summary-${this._summaryIdCounter++}`;
+
+    const content = document.createElement('p');
+    content.className = 'card-text';
+    content.textContent = text;
+
+    card.appendChild(content);
+
+    // Insert at top of recent section
+    container.insertBefore(card, container.firstChild);
+
+    // Trigger fade-in animation
+    requestAnimationFrame(() => card.classList.add('visible'));
+
+    // Fade after 5 minutes
+    setTimeout(() => card.classList.add('faded'), 5 * 60 * 1000);
+
+    // Remove after 15 minutes
+    setTimeout(() => {
+      card.classList.add('removing');
+      setTimeout(() => card.remove(), 300);
+    }, 15 * 60 * 1000);
+
+    this._updateEmptyState();
+  }
+
+  _addChecklist({ title, steps }) {
+    const container = document.getElementById('pinned-cards');
+    const section = document.getElementById('pinned-section');
+
+    const card = document.createElement('div');
+    card.className = 'summary-card checklist-card';
+    card.id = `checklist-${this._summaryIdCounter++}`;
+
+    // Header with title and dismiss button
+    const header = document.createElement('div');
+    header.className = 'card-header';
+
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'card-title';
+    titleEl.textContent = `📋 ${title}`;
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'btn-dismiss';
+    dismissBtn.textContent = '✕';
+    dismissBtn.setAttribute('aria-label', 'Dismiss checklist');
+    dismissBtn.addEventListener('click', () => {
+      card.classList.add('removing');
+      setTimeout(() => {
+        card.remove();
+        // Hide section if no more pinned cards
+        if (container.children.length === 0) {
+          section.classList.add('hidden');
+        }
+        this._updateEmptyState();
+      }, 300);
+    });
+
+    header.appendChild(titleEl);
+    header.appendChild(dismissBtn);
+    card.appendChild(header);
+
+    // Steps as checkboxes
+    const list = document.createElement('ul');
+    list.className = 'checklist';
+
+    steps.forEach((step, index) => {
+      const li = document.createElement('li');
+      li.className = 'checklist-item';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = `${card.id}-step-${index}`;
+      checkbox.className = 'checklist-checkbox';
+
+      const label = document.createElement('label');
+      label.htmlFor = checkbox.id;
+      label.className = 'checklist-label';
+      label.textContent = `${index + 1}. ${step}`;
+
+      checkbox.addEventListener('change', () => {
+        li.classList.toggle('checked', checkbox.checked);
+      });
+
+      li.appendChild(checkbox);
+      li.appendChild(label);
+      list.appendChild(li);
+    });
+
+    card.appendChild(list);
+
+    // Insert at top of pinned section
+    container.insertBefore(card, container.firstChild);
+    section.classList.remove('hidden');
+
+    // Trigger fade-in
+    requestAnimationFrame(() => card.classList.add('visible'));
+
+    this._updateEmptyState();
+  }
+
+  _updateEmptyState() {
+    const empty = document.getElementById('empty-state');
+    const hasPinned = document.getElementById('pinned-cards').children.length > 0;
+    const hasRecent = document.getElementById('recent-cards').children.length > 0;
+
+    empty.classList.toggle('hidden', hasPinned || hasRecent);
+  }
+
+  _showError(message) {
+    const container = document.getElementById('recent-cards');
+    const card = document.createElement('div');
+    card.className = 'summary-card error-card visible';
+
+    const content = document.createElement('p');
+    content.className = 'card-text';
+    content.textContent = `⚠️ ${message}`;
+
+    card.appendChild(content);
+    container.insertBefore(card, container.firstChild);
+
+    // Auto-remove after 30s
+    setTimeout(() => {
+      card.classList.add('removing');
+      setTimeout(() => card.remove(), 300);
+    }, 30000);
+  }
+}
+
+// Initialize app when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  window.app = new FocusFlowApp();
+});
