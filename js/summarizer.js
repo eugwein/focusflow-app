@@ -194,24 +194,48 @@ export class Summarizer {
       };
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const maxRetries = 3;
+    let delay = 1000;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`API error ${response.status}: ${errText}`);
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (response.status === 429 || response.status === 503 || response.status === 500 || response.status === 504) {
+          if (attempt <= maxRetries) {
+            console.warn(`[Summarizer] API returned ${response.status}. Retrying in ${delay}ms... (Attempt ${attempt}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2;
+            continue;
+          }
+        }
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`API error ${response.status}: ${errText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.candidates && result.candidates[0] &&
+            result.candidates[0].content && result.candidates[0].content.parts) {
+          return result.candidates[0].content.parts[0].text;
+        }
+
+        throw new Error('Unexpected API response structure');
+      } catch (err) {
+        if (attempt <= maxRetries && (err.message.includes('fetch') || err.name === 'TypeError' || err.message.includes('NetworkError'))) {
+          console.warn(`[Summarizer] Network error: ${err.message}. Retrying in ${delay}ms... (Attempt ${attempt}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+          continue;
+        }
+        throw err;
+      }
     }
-
-    const result = await response.json();
-
-    if (result.candidates && result.candidates[0] &&
-        result.candidates[0].content && result.candidates[0].content.parts) {
-      return result.candidates[0].content.parts[0].text;
-    }
-
-    throw new Error('Unexpected API response structure');
   }
 }
