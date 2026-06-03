@@ -116,10 +116,10 @@ export class Summarizer {
   // --- Private API call methods ---
 
   async _detectSalience(text) {
-    const prompt = SALIENCE_PROMPT + `\n\nTeacher just said:\n"${text}"`;
+    const prompt = `Teacher just said:\n"${text}"`;
 
     try {
-      const response = await this._callModel(prompt, true);
+      const response = await this._callModel(prompt, true, SALIENCE_PROMPT);
       return JSON.parse(response);
     } catch (err) {
       console.error('Salience detection failed:', err);
@@ -128,12 +128,10 @@ export class Summarizer {
   }
 
   async _generateQuickAlert(recentText, category) {
-    const prompt = QUICK_ALERT_PROMPT +
-      `\n\nContext of session so far:\n${this._sessionSummary || '(just started)'}` +
-      `\n\nTeacher just said:\n"${recentText}"`;
+    const prompt = `Context of session so far:\n${this._sessionSummary || '(just started)'}\n\nTeacher just said:\n"${recentText}"`;
 
     try {
-      const text = await this._callModel(prompt, false);
+      const text = await this._callModel(prompt, false, QUICK_ALERT_PROMPT);
       if (text && this._onQuickAlert) {
         this._onQuickAlert({ text: text.trim(), category });
       }
@@ -143,12 +141,10 @@ export class Summarizer {
   }
 
   async _generateChecklist(recentText) {
-    const prompt = CHECKLIST_PROMPT +
-      `\n\nContext of session so far:\n${this._sessionSummary || '(just started)'}` +
-      `\n\nTeacher just said:\n"${recentText}"`;
+    const prompt = `Context of session so far:\n${this._sessionSummary || '(just started)'}\n\nTeacher just said:\n"${recentText}"\n\nRespond with JSON matching this schema: {"title": "short title", "steps": ["step 1", "step 2", "step 3"]}`;
 
     try {
-      const response = await this._callModel(prompt, true);
+      const response = await this._callModel(prompt, true, CHECKLIST_PROMPT);
       const data = JSON.parse(response);
       if (data && data.steps && data.steps.length > 0 && this._onChecklist) {
         this._onChecklist({
@@ -177,9 +173,10 @@ export class Summarizer {
    * 
    * @param {string} prompt
    * @param {boolean} jsonMode - if true, request JSON response
+   * @param {string} systemInstruction - optional system instruction
    * @returns {Promise<string>}
    */
-  async _callModel(prompt, jsonMode = false) {
+  async _callModel(prompt, jsonMode = false, systemInstruction = null) {
     const apiKey = getApiKey();
     const model = getModel();
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -189,6 +186,12 @@ export class Summarizer {
         parts: [{ text: prompt }]
       }]
     };
+
+    if (systemInstruction) {
+      body.systemInstruction = {
+        parts: [{ text: systemInstruction }]
+      };
+    }
 
     if (jsonMode) {
       body.generationConfig = {
