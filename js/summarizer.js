@@ -35,16 +35,19 @@ Write a SHORT, CLEAR summary:
   💡 for key concepts    📅 for deadlines
   ❓ for questions
 - Tell the student what to DO or REMEMBER
-- Use direct language: "You need to..." not "The teacher said..."`;
+- Use direct language: "You need to..." not "The teacher said..."
+- If the teacher corrects themselves, restarts a sentence, or says "scratch that", only summarize the final corrected instruction.`;
 
 const CHECKLIST_PROMPT = `You are a friendly helper for a young student (age 5-6) who has trouble paying attention. The teacher just gave a set of instructions with multiple steps.
 
 Create a NUMBERED CHECKLIST:
-- List every step the teacher mentioned, in order
-- Use simple words a 5-6 year old can read
-- Keep each step to one short sentence
-- Do NOT skip or combine steps — include ALL of them
-- Uses direct language: "Open your book" not "The teacher said to open"
+- List every step the teacher mentioned, in order, from start to finish.
+- Do NOT skip, combine, or truncate steps — include ALL of them, especially the very last/concluding step.
+- Pay close attention to the end of the transcript to ensure you do not miss the final instruction.
+- If the teacher stutters, corrects themselves, or says "scratch that", extract the final corrected action and ignore the retracted text.
+- Use simple words a 5-6 year old can read.
+- Keep each step to one short, direct sentence.
+- Use direct language: "Open your book" not "The teacher said to open".
 
 Respond with JSON only:
 {"title": "short title", "steps": ["step 1", "step 2", "step 3"]}`;
