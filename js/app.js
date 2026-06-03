@@ -281,23 +281,39 @@ class FocusFlowApp {
     const container = document.getElementById('pinned-cards');
     const section = document.getElementById('pinned-section');
 
+    // --- Option C: Collapse any existing expanded checklists ---
+    container.querySelectorAll('.checklist-card:not(.collapsed)').forEach(existing => {
+      this._collapseChecklist(existing);
+    });
+
     const card = document.createElement('div');
     card.className = 'summary-card checklist-card';
     card.id = `checklist-${this._summaryIdCounter++}`;
 
-    // Header with title and dismiss button
+    // Header with title, expand indicator, and dismiss button
     const header = document.createElement('div');
     header.className = 'card-header';
+
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'card-header-left';
 
     const titleEl = document.createElement('h3');
     titleEl.className = 'card-title';
     titleEl.textContent = `📋 ${title}`;
 
+    const expandIndicator = document.createElement('span');
+    expandIndicator.className = 'expand-indicator';
+    expandIndicator.textContent = '▶';
+
+    headerLeft.appendChild(titleEl);
+    headerLeft.appendChild(expandIndicator);
+
     const dismissBtn = document.createElement('button');
     dismissBtn.className = 'btn-dismiss';
     dismissBtn.textContent = '✕';
     dismissBtn.setAttribute('aria-label', 'Dismiss checklist');
-    dismissBtn.addEventListener('click', () => {
+    dismissBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       card.classList.add('removing');
       setTimeout(() => {
         card.remove();
@@ -309,9 +325,29 @@ class FocusFlowApp {
       }, 300);
     });
 
-    header.appendChild(titleEl);
+    // Collapse summary line (hidden until collapsed)
+    const collapseSummary = document.createElement('div');
+    collapseSummary.className = 'collapse-summary';
+    // Will be updated dynamically
+    collapseSummary.textContent = `${steps.length} steps`;
+
+    // Click header to toggle expand/collapse
+    header.addEventListener('click', () => {
+      if (card.classList.contains('collapsed')) {
+        // Expanding this card — collapse all others first
+        container.querySelectorAll('.checklist-card:not(.collapsed)').forEach(other => {
+          if (other !== card) this._collapseChecklist(other);
+        });
+        card.classList.remove('collapsed');
+      } else {
+        this._collapseChecklist(card);
+      }
+    });
+
+    header.appendChild(headerLeft);
     header.appendChild(dismissBtn);
     card.appendChild(header);
+    card.appendChild(collapseSummary);
 
     // Steps as checkboxes
     const list = document.createElement('ul');
@@ -334,6 +370,13 @@ class FocusFlowApp {
 
       checkbox.addEventListener('change', () => {
         li.classList.toggle('checked', checkbox.checked);
+        // --- Option A: Auto-collapse when all steps are checked ---
+        this._updateCollapseSummary(card);
+        const allChecked = list.querySelectorAll('.checklist-checkbox');
+        const allAreChecked = [...allChecked].every(cb => cb.checked);
+        if (allAreChecked) {
+          this._collapseChecklist(card);
+        }
       });
 
       li.appendChild(checkbox);
@@ -351,6 +394,25 @@ class FocusFlowApp {
     requestAnimationFrame(() => card.classList.add('visible'));
 
     this._updateEmptyState();
+  }
+
+  _collapseChecklist(card) {
+    card.classList.add('collapsed');
+    this._updateCollapseSummary(card);
+  }
+
+  _updateCollapseSummary(card) {
+    const summary = card.querySelector('.collapse-summary');
+    if (!summary) return;
+    const total = card.querySelectorAll('.checklist-checkbox').length;
+    const checked = card.querySelectorAll('.checklist-checkbox:checked').length;
+    if (checked === total && total > 0) {
+      summary.textContent = `✅ All ${total} steps done`;
+    } else if (checked > 0) {
+      summary.textContent = `${checked}/${total} steps done`;
+    } else {
+      summary.textContent = `${total} steps`;
+    }
   }
 
   _updateEmptyState() {
