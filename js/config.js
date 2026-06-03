@@ -6,6 +6,22 @@
  * to the default hardcoded key.
  */
 
+let apiEnvKey = '';
+
+export async function initApiKey() {
+  try {
+    const response = await fetch('/api/config');
+    if (response.ok) {
+      const data = await response.json();
+      if (data.apiKey) {
+        apiEnvKey = data.apiKey;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to fetch API key from environment:', err);
+  }
+}
+
 export function getApiKey() {
   const params = new URLSearchParams(window.location.search);
   const urlKey = params.get('key') || params.get('apiKey');
@@ -21,6 +37,10 @@ export function getApiKey() {
   const savedKey = localStorage.getItem('focusflow_api_key');
   if (savedKey) {
     return savedKey;
+  }
+
+  if (apiEnvKey) {
+    return apiEnvKey;
   }
 
   return 'YOUR_API_KEY_HERE';

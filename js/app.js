@@ -10,7 +10,7 @@ import { LiveSession } from './live-session.js';
 import { TranscriptStore } from './transcript-store.js';
 import { Summarizer } from './summarizer.js';
 import { Chime } from './chime.js';
-import { getApiKey, setApiKey, getModel, setModel } from './config.js';
+import { getApiKey, setApiKey, getModel, setModel, initApiKey } from './config.js';
 import { AudioSimulator } from './audio-simulator.js';
 
 class FocusFlowApp {
@@ -382,6 +382,7 @@ class FocusFlowApp {
 }
 
 // Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await initApiKey();
   window.app = new FocusFlowApp();
 });
