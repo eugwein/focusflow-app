@@ -57,8 +57,15 @@ class FocusFlowApp {
 
     // Transcript Store → Summarizer triggers
     this.store.onTrigger(async (data) => {
+      await this.summarizer.process({
+        ...data,
+        // Live getter: re-fetches transcript at checklist generation time
+        // instead of using the stale snapshot from trigger time
+        getRecentText: () => this.store.getRecentWindow()
+      });
+      // Mark summarized AFTER processing — any text arriving during
+      // async API calls stays in the "new" window for the next trigger
       this.store.markSummarized();
-      await this.summarizer.process(data);
     });
 
     // Transcript Store → debug transcript display

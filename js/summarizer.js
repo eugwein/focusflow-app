@@ -94,11 +94,12 @@ export class Summarizer {
         return; // Not salient — do nothing
       }
 
-      // Stage 2: Generate summary
+      // Stage 2: Generate summary — use live getter for freshest text
+      const freshText = data.getRecentText ? data.getRecentText() : data.recentText;
       if (salience.has_multiple_steps) {
-        await this._generateChecklist(data.recentText);
+        await this._generateChecklist(freshText);
       } else {
-        await this._generateQuickAlert(data.recentText, salience.category);
+        await this._generateQuickAlert(freshText, salience.category);
       }
 
       // Periodically update session summary for context
