@@ -25,7 +25,7 @@ export class TranscriptStore {
 
     /** Config */
     this.SUMMARY_INTERVAL_MS = 30000;     // Min 30s between time-based triggers
-    this.SILENCE_TRIGGER_MS = 8000;        // Trigger after 8s silence (teachers pause naturally for 3-5s)
+    this.SILENCE_TRIGGER_MS = 6000;        // Trigger after 6s silence (teachers pause naturally for 3-5s)
     this.WINDOW_SECONDS = 180;             // 3-minute rolling window
     this.MIN_NEW_CHARS = 50;               // Min new chars before triggering
   }
