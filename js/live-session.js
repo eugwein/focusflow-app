@@ -41,6 +41,14 @@ export class LiveSession {
     this._emitStatus('connecting');
 
     const apiKey = getApiKey();
+    if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+      this._running = false;
+      this._emitStatus('error');
+      const err = new Error('Gemini API key is missing or invalid. Please click ⚙️ Settings and enter your key.');
+      if (this._onError) this._onError(err);
+      return Promise.reject(err);
+    }
+
     const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 
     return new Promise((resolve, reject) => {

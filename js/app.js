@@ -119,10 +119,15 @@ class FocusFlowApp {
       transcriptToggle.textContent = isOpen ? '▼ Hide live transcript' : '▶ Show live transcript';
     });
 
-    settingsBtn.addEventListener('click', () => {
+    this._openSettingsModal = () => {
       apiKeyInput.value = localStorage.getItem('focusflow_api_key') || '';
       selectModel.value = getModel();
       settingsModal.classList.add('visible');
+      apiKeyInput.focus();
+    };
+
+    settingsBtn.addEventListener('click', () => {
+      this._openSettingsModal();
     });
 
     settingsCancelBtn.addEventListener('click', () => {
@@ -441,6 +446,13 @@ class FocusFlowApp {
 
     card.appendChild(content);
     container.insertBefore(card, container.firstChild);
+
+    const msgLower = (message || '').toLowerCase();
+    if (msgLower.includes('api key') || msgLower.includes('403') || msgLower.includes('1008')) {
+      if (typeof this._openSettingsModal === 'function') {
+        this._openSettingsModal();
+      }
+    }
 
     // Auto-remove after 30s
     setTimeout(() => {

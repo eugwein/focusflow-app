@@ -474,6 +474,12 @@ These are documented here because they reveal important constraints of the Gemin
 **Symptom**: Console 404 error on `/favicon.ico`.
 **Fix**: Inline SVG data URL favicon (🎯 emoji) in the `<head>` tag, eliminating the need for a separate file.
 
+### 9. Pre-Connection API Key Validation & Auto-Settings Trigger
+
+**Symptom**: Unconfigured or default placeholder API keys (`YOUR_API_KEY_HERE`) caused opaque WebSocket close errors (`1006` / `403` / `1008`) when attempting to connect to the Gemini Live API.
+**Cause**: The client attempted WebSocket connections using invalid placeholder keys without validating key presence first, and did not guide the user to the configuration interface.
+**Fix**: Added pre-connection key checking in `LiveSession.connect()` to fail fast with a descriptive error message if `getApiKey()` returns empty or `YOUR_API_KEY_HERE`. Updated `FocusFlowApp._showError()` to automatically open and focus the ⚙️ Settings modal whenever an API key error is caught, providing an immediate path for the user to paste a valid Gemini API key.
+
 ---
 
 ## Configuration & Settings
